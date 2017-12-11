@@ -3,59 +3,98 @@
 \RequirePackage{pgfplotstable}
 \RequirePackage{pgfkeys}
 \RequirePackage{pgfmath}
+\RequirePackage{trace}
 
 \ProcessOptions\relax
 
 \pgfkeys{
     /tablemath/.is family, 
     /tablemath,
-        tablemathMin/.is family,
+        quantile/.is family,
         createCommand/.is family,
         column/.estore in = \tablemath@column, 
-    /tablemath/tablemathMin,
+    /tablemath/quantile,
+        q/.estore in = \tablemath@quantile@q,
+        k/.estore in = \tablemath@quantile@k,
+        upper quartile/.style={q=4,k=3},
+        lower quartile/.style={q=4,k=1},
+        median/.style={q=4,k=2},
         .search also = {/tablemath},
 }
         
+\def\tablemath@cmdname#1{\expandafter\@gobble\string#1}%
+
 \newcommand{\tablemath@parseSorted}[1]{
-        \pgfplotstablesort[sort cmp=float <,sort key=\tablemath@column]{\tmptable}{#1}%
-        %Find min in first fow
-        \pgfplotstablegetelem{0}{\tablemath@column}\of{\tmptable}%
-        \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Min@\tablemath@column\endcsname{\pgfplotsretval}%
-        %Find max by looking in last row
-        \pgfplotstablegetrowsof{\tmptable}%
-        \pgfmathtruncatemacro{\tmp}{\pgfmathresult-1}%
-        \pgfplotstablegetelem{\tmp}{\tablemath@column}\of{\tmptable}%
-        \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Max@\tablemath@column\endcsname{\pgfplotsretval}%
-        %Find median
-        \ifodd\tmp 
-            \pgfmathtruncatemacro{\res}{\tmp/2+0.5}
-            \pgfplotstablegetelem{\res}{\tablemath@column}\of{\tmptable}
-            \pgfmathsetmacro{\tmpa}{\pgfplotsretval}
-            %
-            \pgfmathtruncatemacro{\res}{\tmp/2-0.5}
-            \pgfplotstablegetelem{\res}{\tablemath@column}\of{\tmptable}
-            \pgfmathparse{(\tmpa+\pgfplotsretval)/2}
-            \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Median@\tablemath@column\endcsname{\pgfmathresult}%
-        \else
-            %We have the middle!
-            \pgfmathtruncatemacro{\res}{\tmp/2}
-            \pgfplotstablegetelem{\res}{\tablemath@column}\of{\tmptable}
-            \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Median@\tablemath@column\endcsname{\pgfplotsretval}%
-        \fi
+        \tablemath@sort{\tablemath@column}{#1}
+        %
+        \newcommand\tablemath@tmp[1]{%
+            %Find min in first fow
+            \pgfplotstablegetelem{0}{\tablemath@column}\of{##1}%
+            \expandafter\pgfmathsetmacro\csname tablemath@results@\tablemath@cmdname#1@Min@\tablemath@column\endcsname{\pgfplotsretval}%
+            %Find max by looking in last row
+            \pgfplotstablegetrowsof{##1}%
+            \pgfmathtruncatemacro{\tmp}{\pgfmathresult-1}%
+            \pgfplotstablegetelem{\tmp}{\tablemath@column}\of{##1}%
+            \expandafter\pgfmathsetmacro\csname tablemath@results@\tablemath@cmdname#1@Max@\tablemath@column\endcsname{\pgfplotsretval}%
+        }
+        \expandafter\tablemath@tmp\expandafter{\tablemath@tmptable}
+}
+
+%Arguments: Column, Original Table name
+\newcommand\tablemath@sort[2]{
+    %Internal: Sort table #3 using col #2 and store in #1
+    \newcommand\tablemath@sortAux[3]{%
+        \pgfplotstablesort[sort cmp=float <,sort key=##2]{##1}{##3}
+    }
+    \newcommand\tablemath@alias[1]{\def\tablemath@tmptable{##1}}
+    \ifcsname tablemath@results@sorted@\tablemath@cmdname#2@#1\endcsname
+    \else
+        \expandafter\tablemath@sortAux\expandafter{\csname tablemath@results@sorted@\tablemath@cmdname#2@#1\endcsname}{#1}{#2}
+    \fi
+    \expandafter\tablemath@alias\expandafter{\csname tablemath@results@sorted@\tablemath@cmdname#2@#1\endcsname}
+}
+
+
+\newcommand\tablemathQuantile[2][]{
+    \pgfkeys{/tablemath/quantile, #1}
+    %Cache sorting ...
+    \tablemath@sort{\tablemath@column}{#2}
+    %Get quantile
+    \expandafter\pgfplotstablegetrowsof\expandafter{\tablemath@tmptable}
+    \pgfmathsetmacro{\tablemath@colcount}{\pgfplotsretval}
+    \newcommand\z[1]{%
+        \pgfplotstablegetelem{\pgfmathresult}{\tablemath@column}\of{##1}
+    }
+    %\pgfmathparse{frac(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)==0}
+    \pgfmathparse{int(1)}
+    \ifnum\pgfmathresult = 0
+        \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
+        \expandafter\z\tablemath@tmptable
+        \pgfplotsretval
+    \else
+        \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
+        \expandafter\z\tablemath@tmptable
+        \pgfmathsetmacro{\tablemath@tmpa}{\pgfplotsretval}
+        \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q))}
+        \expandafter\z\tablemath@tmptable
+        \pgfmathparse{((\tablemath@tmpa+\pgfplotsretval)/2)}
+        \pgfmathresult
+    \fi
 }
 
 \newcommand{\tablemath@newfun}[1]{
-    \expandafter\newcommand\csname tablemath#1\endcsname[2][]{
+    \expandafter\newcommand\csname tablemath#1\endcsname[2][]{%
         \pgfkeys{/tablemath, ##1}
-        \ifcsname tablemath@results@\string##2@#1@\tablemath@column\endcsname
+        \ifcsname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
         \else
             \tablemath@parseSorted{##2}
         \fi
-        \csname tablemath@results@\string##2@#1@\tablemath@column\endcsname
+        \csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
     }
 }
 
-\@for\i:=Min,Max,Median\do{%
+\newcommand\tablemathMedian[2][]{\tablemathQuantile[#1,median]{#2}}
+\@for\i:=Min,Max\do{%
     \expandafter\tablemath@newfun\expandafter{\i}
 }
 

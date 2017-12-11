@@ -60,6 +60,9 @@
 
 \newcommand\tablemathQuantile[2][]{
     \pgfkeys{/tablemath/quantile, #1}
+    \ifnum\tablemath@quantile@q < 2\pgferror{Quantiles smaller than the 2-Quantile don't make sense}\fi
+    \ifnum\tablemath@quantile@k < \tablemath@quantile@q\else\pgferror{Quantiles must have k < q [k=\tablemath@quantile@k, q=\tablemath@quantile@k]}\fi
+    \ifnum\tablemath@quantile@k < 1\pgferror{The k-th q-Quantile must have k >= 1 [k=\tablemath@quantile@k]}\fi
     %Cache sorting ...
     \tablemath@sort{\tablemath@column}{#2}
     %Get quantile

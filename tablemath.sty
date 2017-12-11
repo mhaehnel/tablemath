@@ -1,0 +1,62 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tablemath}[2017/12/08]
+\RequirePackage{pgfplotstable}
+\RequirePackage{pgfkeys}
+\RequirePackage{pgfmath}
+
+\ProcessOptions\relax
+
+\pgfkeys{
+    /tablemath/.is family, 
+    /tablemath,
+        tablemathMin/.is family,
+        createCommand/.is family,
+        column/.estore in = \tablemath@column, 
+    /tablemath/tablemathMin,
+        .search also = {/tablemath},
+}
+        
+\newcommand{\tablemath@parseSorted}[1]{
+        \pgfplotstablesort[sort cmp=float <,sort key=\tablemath@column]{\tmptable}{#1}%
+        %Find min in first fow
+        \pgfplotstablegetelem{0}{\tablemath@column}\of{\tmptable}%
+        \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Min@\tablemath@column\endcsname{\pgfplotsretval}%
+        %Find max by looking in last row
+        \pgfplotstablegetrowsof{\tmptable}%
+        \pgfmathtruncatemacro{\tmp}{\pgfmathresult-1}%
+        \pgfplotstablegetelem{\tmp}{\tablemath@column}\of{\tmptable}%
+        \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Max@\tablemath@column\endcsname{\pgfplotsretval}%
+        %Find median
+        \ifodd\tmp 
+            \pgfmathtruncatemacro{\res}{\tmp/2+0.5}
+            \pgfplotstablegetelem{\res}{\tablemath@column}\of{\tmptable}
+            \pgfmathsetmacro{\tmpa}{\pgfplotsretval}
+            %
+            \pgfmathtruncatemacro{\res}{\tmp/2-0.5}
+            \pgfplotstablegetelem{\res}{\tablemath@column}\of{\tmptable}
+            \pgfmathparse{(\tmpa+\pgfplotsretval)/2}
+            \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Median@\tablemath@column\endcsname{\pgfmathresult}%
+        \else
+            %We have the middle!
+            \pgfmathtruncatemacro{\res}{\tmp/2}
+            \pgfplotstablegetelem{\res}{\tablemath@column}\of{\tmptable}
+            \expandafter\pgfmathsetmacro\csname tablemath@results@\string#1@Median@\tablemath@column\endcsname{\pgfplotsretval}%
+        \fi
+}
+
+\newcommand{\tablemath@newfun}[1]{
+    \expandafter\newcommand\csname tablemath#1\endcsname[2][]{
+        \pgfkeys{/tablemath, ##1}
+        \ifcsname tablemath@results@\string##2@#1@\tablemath@column\endcsname
+        \else
+            \tablemath@parseSorted{##2}
+        \fi
+        \csname tablemath@results@\string##2@#1@\tablemath@column\endcsname
+    }
+}
+
+\@for\i:=Min,Max,Median\do{%
+    \expandafter\tablemath@newfun\expandafter{\i}
+}
+
+\endinput

@@ -83,8 +83,7 @@
         \pgfmathsetmacro{\tablemath@tmpa}{\pgfplotsretval}
         \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q))}
         \expandafter\z\tablemath@tmptable
-        \pgfmathparse{((\tablemath@tmpa+\pgfplotsretval)/2)}
-        \pgfmathsetmacro{\tablemathretval}{\pgfmathresult}
+        \pgfmathsetmacro{\tablemathretval}{((\tablemath@tmpa+\pgfplotsretval)/2)}
     \fi
     \iftablemath@printresult\tablemathretval\fi
 }

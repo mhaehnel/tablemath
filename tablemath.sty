@@ -6,13 +6,16 @@
 \RequirePackage{trace}
 
 \ProcessOptions\relax
-
+\newif\iftablemath@printresult
 \pgfkeys{
     /tablemath/.is family, 
     /tablemath,
         quantile/.is family,
-        createCommand/.is family,
         column/.estore in = \tablemath@column, 
+        show/.is if = tablemath@printresult,
+        show/.default = true,
+        show/.initial = true,
+        show,
     /tablemath/quantile,
         q/.estore in = \tablemath@quantile@q,
         k/.estore in = \tablemath@quantile@k,
@@ -70,7 +73,7 @@
     \ifnum\pgfmathresult = 0
         \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
         \expandafter\z\tablemath@tmptable
-        \pgfplotsretval
+        \pgfmathsetmacro{\tablemathretval}{\pgfplotsretval}
     \else
         \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
         \expandafter\z\tablemath@tmptable
@@ -78,8 +81,9 @@
         \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q))}
         \expandafter\z\tablemath@tmptable
         \pgfmathparse{((\tablemath@tmpa+\pgfplotsretval)/2)}
-        \pgfmathresult
+        \pgfmathsetmacro{\tablemathretval}{\pgfmathresult}
     \fi
+    \iftablemath@printresult\tablemathretval\fi
 }
 
 \newcommand{\tablemath@newfun}[1]{
@@ -89,7 +93,8 @@
         \else
             \tablemath@parseSorted{##2}
         \fi
-        \csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
+        \pgfmathsetmacro{\tablemathretval}{\csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname}
+        \iftablemath@printresult\tablemathretval\fi
     }
 }
 

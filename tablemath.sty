@@ -71,8 +71,8 @@
     \newcommand\z[1]{%
         \pgfplotstablegetelem{\pgfmathresult}{\tablemath@column}\of{##1}
     }
-    %\pgfmathparse{frac(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)==0}
-    \pgfmathparse{int(1)}
+    \pgfmathsetmacro{\tablemath@quantile@r}{\tablemath@quantile@k/\tablemath@quantile@q}
+    \pgfmathparse{int(\tablemath@quantile@r*\tablemath@colcount)-\tablemath@quantile@r*\tablemath@colcount == 0}
     \ifnum\pgfmathresult = 0
         \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
         \expandafter\z\tablemath@tmptable

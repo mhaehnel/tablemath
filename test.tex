@@ -22,7 +22,6 @@
     $Min = \tablemathMin[column=Power]{\platinumFour}$
     
     $Max = \tablemathMax[column=Power]{\platinumFour}$
-    
 
 
 \newcommand{\quantiles}[2]{%
@@ -42,6 +41,13 @@
     \quantiles{1}{9}
 \end{tabular}
 
+
+    $sum = \tablemathFun[column=Power,sum]{\platinumFour}$
+
+    $product = \tablemathFun[use fpu,column=Power,product]{\platinumFour}$
+    
+    $average = \tablemathFun[column=Power,average]{\platinumFour}$
+    
     ---
 
     \pgfplotstabletypeset{\platinumFour}

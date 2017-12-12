@@ -7,10 +7,13 @@
 
 \ProcessOptions\relax
 \newif\iftablemath@printresult
+\newif\iftablemath@usefpu
+
 \pgfkeys{
     /tablemath/.is family, 
     /tablemath,
         quantile/.is family,
+        fun/.is family,
         column/.estore in = \tablemath@column, 
         show/.is if = tablemath@printresult,
         show/.default = true,
@@ -24,6 +27,17 @@
         median/.style={q=4,k=2},
         method/.estore in = \tablemath@quantile@method,
         method=7,
+        .search also = {/tablemath},
+    /tablemath/fun,
+        initial/.estore in = \acc,
+        use fpu/.is if = tablemath@usefpu,
+        operation/.store in = \tablemath@fun@code,
+        finally/.store in = \tablemath@fun@postcode,
+        finally=\acc, 
+        initial=0,
+        sum/.style = {operation={\acc + \cell}},
+        product/.style = {initial=1,operation={\acc * \cell}},
+        average/.style = {sum,finally={\acc/\rows}},
         .search also = {/tablemath},
 }
         
@@ -144,6 +158,26 @@
         \pgferror{Quantile method \tablemath@quantile@method invalid. Valid methods are 1-9}
     \fi
     \iftablemath@printresult\tablemathretval\fi
+}
+
+%Usable macros:
+% \rows
+% \cell
+% \acc
+\newcommand{\tablemathFun}[2][]{%
+    \pgfkeys{/tablemath/fun, #1}
+    \iftablemath@usefpu\pgfkeys{/pgf/fpu}\fi
+    \pgfplotstablegetrowsof{#2}
+    \pgfmathsetmacro{\rows}{\pgfplotsretval}
+    \pgfplotstableforeachcolumnelement{\tablemath@column}\of#2\as\cell{
+        \pgfmathsetmacro{\acc}{\tablemath@fun@code}
+    }
+    \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}
+    \iftablemath@usefpu
+        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
+    \else
+        \iftablemath@printresult\tablemathretval\fi
+    \fi
 }
 
 \newcommand{\tablemath@newfun}[1]{%

@@ -22,6 +22,8 @@
         upper quartile/.style={q=4,k=3},
         lower quartile/.style={q=4,k=1},
         median/.style={q=4,k=2},
+        method/.estore in = \tablemath@quantile@method,
+        method=7,
         .search also = {/tablemath},
 }
         
@@ -58,7 +60,7 @@
 }
 
 
-\newcommand\tablemathQuantile[2][]{
+\newcommand\tablemathQuantile[2][]{%
     \pgfkeys{/tablemath/quantile, #1}
     \ifnum\tablemath@quantile@q < 2\pgferror{Quantiles smaller than the 2-Quantile don't make sense}\fi
     \ifnum\tablemath@quantile@k < \tablemath@quantile@q\else\pgferror{Quantiles must have k < q [k=\tablemath@quantile@k, q=\tablemath@quantile@k]}\fi
@@ -67,28 +69,84 @@
     \tablemath@sort{\tablemath@column}{#2}
     %Get quantile
     \expandafter\pgfplotstablegetrowsof\expandafter{\tablemath@tmptable}
-    \pgfmathsetmacro{\tablemath@colcount}{\pgfplotsretval}
-    \newcommand\z[1]{%
+    \pgfmathsetmacro{\tablemath@rows}{\pgfplotsretval}
+    \newcommand\y[3]{%
+        \pgfmathparse{int((##2)-1)}
         \pgfplotstablegetelem{\pgfmathresult}{\tablemath@column}\of{##1}
+        \pgfmathsetmacro{##3}{\pgfplotsretval}
     }
-    \pgfmathsetmacro{\tablemath@quantile@r}{\tablemath@quantile@k/\tablemath@quantile@q}
-    \pgfmathparse{int(\tablemath@quantile@r*\tablemath@colcount)-\tablemath@quantile@r*\tablemath@colcount == 0}
-    \ifnum\pgfmathresult = 0
-        \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
-        \expandafter\z\tablemath@tmptable
-        \pgfmathsetmacro{\tablemathretval}{\pgfplotsretval}
-    \else
-        \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q)-1)}
-        \expandafter\z\tablemath@tmptable
-        \pgfmathsetmacro{\tablemath@tmpa}{\pgfplotsretval}
-        \pgfmathparse{int(ceil(\tablemath@colcount*\tablemath@quantile@k/\tablemath@quantile@q))}
-        \expandafter\z\tablemath@tmptable
-        \pgfmathsetmacro{\tablemathretval}{((\tablemath@tmpa+\pgfplotsretval)/2)}
+    \pgfmathsetmacro{\tablemath@quantile@p}{\tablemath@quantile@k/\tablemath@quantile@q}
+    %Select method, remember: p can not be 1 or 0 due to the above constraints
+    \ifcase\tablemath@quantile@method%0
+        \pgferror{Quantile method 0 invalid. Valid methods are 1-9}
+    \or%1
+        \pgfmathsetmacro{\h}{\tablemath@rows*\tablemath@quantile@p+0.5}
+        \expandafter\y\tablemath@tmptable{ceil(\h-0.5)}{\tablemathretval}
+    \or%2
+        \pgfmathsetmacro{\h}{\tablemath@rows*\tablemath@quantile@p+0.5}
+        \expandafter\y\tablemath@tmptable{ceil(\h-0.5)}{\xh}
+        \expandafter\y\tablemath@tmptable{ceil(\h+0.5)}{\xhn}
+        \pgfmathsetmacro{\tablemathretval}{(\xh+\xhn)/2}
+    \or%3
+        \pgfmathsetmacro{\h}{\tablemath@rows*\tablemath@quantile@p}
+        \pgfmathparse{int(round(\h))}
+        \ifnum\pgfmathresult=0
+            \expandafter\y\tablemath@tmptable{1}{\tablemathretval}
+        \else
+            \expandafter\y\tablemath@tmptable{round(\h)}{\tablemathretval}
+        \fi
+    \or%4
+        \pgfmathsetmacro{\h}{\tablemath@rows*\tablemath@quantile@p}
+        \pgfmathparse{int(floor(\h))}
+        \ifnum\pgfmathresult=0
+            \expandafter\y\tablemath@tmptable{1}{\tablemathretval}
+        \else
+            \expandafter\y\tablemath@tmptable{floor(\h)}{\xh}
+            \expandafter\y\tablemath@tmptable{floor(\h+1)}{\xhn}
+            \pgfmathsetmacro{\tablemathretval}{\xh+(\h-floor(\h))*(\xhn-\xh)}
+        \fi
+    \or%5
+        \pgfmathsetmacro{\h}{\tablemath@rows*\tablemath@quantile@p+0.5}
+        \pgfmathparse{int(floor(\h))}
+        \ifnum\pgfmathresult=0
+            \expandafter\y\tablemath@tmptable{1}{\tablemathretval}
+        \else
+            \expandafter\y\tablemath@tmptable{floor(\h)}{\xh}
+            \expandafter\y\tablemath@tmptable{floor(\h+1)}{\xhn}
+            \pgfmathsetmacro{\tablemathretval}{\xh+(\h-floor(\h))*(\xhn-\xh)}
+        \fi
+    \or%6
+        \pgfmathsetmacro{\h}{(\tablemath@rows+1)*\tablemath@quantile@p}
+        \pgfmathparse{int(floor(\h))}
+        \ifnum\pgfmathresult=0
+            \expandafter\y\tablemath@tmptable{1}{\tablemathretval}
+        \else
+            \expandafter\y\tablemath@tmptable{floor(\h)}{\xh}
+            \expandafter\y\tablemath@tmptable{floor(\h+1)}{\xhn}
+            \pgfmathsetmacro{\tablemathretval}{\xh+(\h-floor(\h))*(\xhn-\xh)}
+        \fi
+    \or%7
+        \pgfmathsetmacro{\h}{(\tablemath@rows-1)*\tablemath@quantile@p+1}
+        \expandafter\y\tablemath@tmptable{floor(\h)}{\xh}
+        \expandafter\y\tablemath@tmptable{floor(\h+1)}{\xhn}
+        \pgfmathsetmacro{\tablemathretval}{\xh+(\h-floor(\h))*(\xhn-\xh)}
+    \or%8
+        \pgfmathsetmacro{\h}{(\tablemath@rows+1/3)*\tablemath@quantile@p+1/3}
+        \expandafter\y\tablemath@tmptable{floor(\h)}{\xh}
+        \expandafter\y\tablemath@tmptable{floor(\h+1)}{\xhn}
+        \pgfmathsetmacro{\tablemathretval}{\xh+(\h-floor(\h))*(\xhn-\xh)}
+    \or%9
+        \pgfmathsetmacro{\h}{(\tablemath@rows+1/4)*\tablemath@quantile@p+3/8}
+        \expandafter\y\tablemath@tmptable{floor(\h)}{\xh}
+        \expandafter\y\tablemath@tmptable{floor(\h+1)}{\xhn}
+        \pgfmathsetmacro{\tablemathretval}{\xh+(\h-floor(\h))*(\xhn-\xh)}
+    \else%
+        \pgferror{Quantile method \tablemath@quantile@method invalid. Valid methods are 1-9}
     \fi
     \iftablemath@printresult\tablemathretval\fi
 }
 
-\newcommand{\tablemath@newfun}[1]{
+\newcommand{\tablemath@newfun}[1]{%
     \expandafter\newcommand\csname tablemath#1\endcsname[2][]{%
         \pgfkeys{/tablemath, ##1}
         \ifcsname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
@@ -96,7 +154,7 @@
             \tablemath@parseSorted{##2}
         \fi
         \pgfmathsetmacro{\tablemathretval}{\csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname}
-        \iftablemath@printresult\tablemathretval\fi
+        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
     }
 }
 

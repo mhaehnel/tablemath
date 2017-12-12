@@ -23,13 +23,24 @@
     
     $Max = \tablemathMax[column=Power]{\platinumFour}$
     
-    $Median = \tablemathQuantile[median,column=Power]{\platinumFour}$
-   
-    $upper quartile = \tablemathQuantile[column=Power,q=4,k=3]{\platinumFour}$
 
-    $upper quartile(2) = \tablemathQuantile[column=Power, upper quartile]{\platinumFour}$
 
-    $lower quartile = \tablemathQuantile[column=Power,q=4,k=1]{\platinumFour}$
+\newcommand{\quantiles}[2]{%
+    R-#1 &
+    \tablemathQuantile[method=#1,column=Power,median]{\platinumFour} &
+    \tablemathQuantile[method=#1,column=Power,upper quartile]{\platinumFour} &
+    \tablemathQuantile[method=#1,column=Power,lower quartile]{\platinumFour}%
+    \ifnum#1 < #2%
+        \\%
+        \pgfmathtruncatemacro{\cur}{int(#1+1)}%
+        \expandafter\quantiles\cur{#2}%
+    \fi%
+}
+
+\begin{tabular}{c|rrr}
+    & Median & Upper Quartile & Lower Quartile  \\
+    \quantiles{1}{9}
+\end{tabular}
 
     ---
 

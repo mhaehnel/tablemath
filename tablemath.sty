@@ -15,6 +15,8 @@
         quantile/.is family,
         fun/.is family,
         column/.estore in = \tablemath@column, 
+        result in/.store in = \tablemath@result,
+        result in/.add code = {}{\pgfkeysalso{show=false}},
         show/.is if = tablemath@printresult,
         show/.default = true,
         show/.initial = true,
@@ -42,6 +44,17 @@
 }
         
 \def\tablemath@cmdname#1{\expandafter\@gobble\string#1}%
+
+\newcommand{\tablemath@processResult}{%Target
+    \iftablemath@usefpu
+        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
+    \else
+        \iftablemath@printresult\tablemathretval\fi
+    \fi
+    \ifdefined\tablemath@result
+        \expandafter\global\expandafter\let\tablemath@result\tablemathretval
+    \fi
+}
 
 \newcommand{\tablemath@parseSorted}[1]{
         \tablemath@sort{\tablemath@column}{#1}
@@ -157,7 +170,7 @@
     \else%
         \pgferror{Quantile method \tablemath@quantile@method invalid. Valid methods are 1-9}
     \fi
-    \iftablemath@printresult\tablemathretval\fi
+    \tablemath@processResult
 }
 
 %Usable macros:
@@ -173,11 +186,7 @@
         \pgfmathsetmacro{\acc}{\tablemath@fun@code}
     }
     \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}
-    \iftablemath@usefpu
-        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
-    \else
-        \iftablemath@printresult\tablemathretval\fi
-    \fi
+    \tablemath@processResult
 }
 
 \newcommand{\tablemath@newfun}[1]{%
@@ -188,7 +197,7 @@
             \tablemath@parseSorted{##2}
         \fi
         \pgfmathsetmacro{\tablemathretval}{\csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname}
-        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
+        \tablemath@processResult
     }
 }
 

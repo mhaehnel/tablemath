@@ -56,10 +56,11 @@
     \fi
 }
 
+\newcommand\tablemath@tmp\relax
 \newcommand{\tablemath@parseSorted}[1]{
         \tablemath@sort{\tablemath@column}{#1}
         %
-        \newcommand\tablemath@tmp[1]{%
+        \renewcommand\tablemath@tmp[1]{%
             %Find min in first fow
             \pgfplotstablegetelem{0}{\tablemath@column}\of{##1}%
             \expandafter\pgfmathsetmacro\csname tablemath@results@\tablemath@cmdname#1@Min@\tablemath@column\endcsname{\pgfplotsretval}%
@@ -72,13 +73,14 @@
         \expandafter\tablemath@tmp\expandafter{\tablemath@tmptable}
 }
 
+%Internal: Sort table #3 using col #2 and store in #1
+\newcommand\tablemath@sortAux[3]{%
+    \pgfplotstablesort[sort cmp=float <,sort key=#2]{#1}{#3}
+}
+\newcommand\tablemath@alias[1]{\def\tablemath@tmptable{#1}}
+
 %Arguments: Column, Original Table name
 \newcommand\tablemath@sort[2]{
-    %Internal: Sort table #3 using col #2 and store in #1
-    \newcommand\tablemath@sortAux[3]{%
-        \pgfplotstablesort[sort cmp=float <,sort key=##2]{##1}{##3}
-    }
-    \newcommand\tablemath@alias[1]{\def\tablemath@tmptable{##1}}
     \ifcsname tablemath@results@sorted@\tablemath@cmdname#2@#1\endcsname
     \else
         \expandafter\tablemath@sortAux\expandafter{\csname tablemath@results@sorted@\tablemath@cmdname#2@#1\endcsname}{#1}{#2}
@@ -97,7 +99,7 @@
     %Get quantile
     \expandafter\pgfplotstablegetrowsof\expandafter{\tablemath@tmptable}
     \pgfmathsetmacro{\tablemath@rows}{\pgfplotsretval}
-    \newcommand\y[3]{%
+    \providecommand\y[3]{%
         \pgfmathparse{int((##2)-1)}
         \pgfplotstablegetelem{\pgfmathresult}{\tablemath@column}\of{##1}
         \pgfmathsetmacro{##3}{\pgfplotsretval}
@@ -193,7 +195,7 @@
     \expandafter\newcommand\csname tablemath#1\endcsname[2][]{%
         \pgfkeys{/tablemath, ##1}
         \ifcsname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
-        \else
+        \else%
             \tablemath@parseSorted{##2}
         \fi
         \pgfmathsetmacro{\tablemathretval}{\csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname}

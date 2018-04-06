@@ -38,9 +38,12 @@
         finally/.store in = \tablemath@fun@postcode,
         finally=\acc, 
         initial=0,
-        sum/.style = {operation={\acc + \cell}},
+        sum/.style = {initial=0,operation={\acc + \cell}},
         product/.style = {initial=1,operation={\acc * \cell}},
         average/.style = {sum,finally={\acc/\rows}},
+        mape/.style = {initial=0,operation={\acc + abs(\cell},finally={\acc*100/\rows}},
+        gmrae/.style = {initial=0,operation={\acc + ln(abs(\cell))},finally={exp(\acc/\rows)}},
+        gmrae-percent/.style = {gmrae,finally={100*exp(\acc/\rows)}},
         .search also = {/tablemath},
 }
         

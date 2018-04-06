@@ -16,7 +16,8 @@
         fun/.is family,
         column/.estore in = \tablemath@column, 
         result in/.store in = \tablemath@result,
-        result in/.add code = {}{\pgfkeysalso{show=false}},
+        result in/.add code = {}{\pgfkeysalso{/tablemath/show=false}},
+        round result to/.store in = \tablemath@round,
         show/.is if = tablemath@printresult,
         show/.default = true,
         show/.initial = true,
@@ -46,12 +47,15 @@
 \def\tablemath@cmdname#1{\expandafter\@gobble\string#1}%
 
 \newcommand{\tablemath@processResult}{%Target
-    \iftablemath@usefpu
-        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
+    \ifdefined\tablemath@round
+        \iftablemath@printresult\pgfmathprintnumber[precision=\tablemath@round]\tablemathretval\fi
     \else
-        \iftablemath@printresult\tablemathretval\fi
+        \iftablemath@printresult\pgfmathprintnumber\tablemathretval\fi
     \fi
     \ifdefined\tablemath@result
+        \ifdefined\tablemath@round
+            \pgfmathprintnumberto[precision=\tablemath@round]\tablemathretval{\tablemathretval}
+        \fi
         \expandafter\global\expandafter\let\tablemath@result\tablemathretval
     \fi
 }

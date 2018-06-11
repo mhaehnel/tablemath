@@ -187,12 +187,14 @@
 % \cell
 % \acc
 \newcommand{\tablemathFun}[2][]{%
-    \pgfkeys{/tablemath/fun, #1}
+    \pgfkeys{/tablemath/fun, #1}%
     \iftablemath@usefpu\pgfkeys{/pgf/fpu,/pgf/fpu/output format=fixed}\fi
-    \pgfplotstablegetrowsof{#2}
-    \pgfmathsetmacro{\rows}{\pgfplotsretval}
-    \pgfplotstableforeachcolumnelement{\tablemath@column}\of#2\as\cell{
-        \pgfmathsetmacro{\acc}{\tablemath@fun@code}
+    \pgfplotstablegetrowsof{#2}%
+    \pgfmathsetmacro{\rows}{\pgfplotsretval}%
+	\pgfmathsetmacro\rowno{0}%
+    \pgfplotstableforeachcolumnelement{\tablemath@column}\of#2\as\cell{%
+        \pgfmathsetmacro{\acc}{\tablemath@fun@code}%
+		\pgfmathsetmacro\rowno{\rowno + 1}%
     }
     \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}
     \tablemath@processResult

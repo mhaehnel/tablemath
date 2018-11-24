@@ -46,7 +46,7 @@
         gmrae-percent/.style = {gmrae,finally={100*exp(\acc/\rows)}},
         .search also = {/tablemath},
 }
-        
+
 \def\tablemath@cmdname#1{\expandafter\@gobble\string#1}%
 
 \newcommand{\tablemath@processResult}{%Target
@@ -97,6 +97,7 @@
 
 
 \newcommand\tablemathQuantile[2][]{%
+    \begingroup
     \pgfkeys{/tablemath/quantile, #1}
     \ifnum\tablemath@quantile@q < 2\pgferror{Quantiles smaller than the 2-Quantile don't make sense}\fi
     \ifnum\tablemath@quantile@k < \tablemath@quantile@q\else\pgferror{Quantiles must have k < q [k=\tablemath@quantile@k, q=\tablemath@quantile@k]}\fi
@@ -180,6 +181,7 @@
         \pgferror{Quantile method \tablemath@quantile@method invalid. Valid methods are 1-9}
     \fi
     \tablemath@processResult
+    \endgroup
 }
 
 %Usable macros:
@@ -187,21 +189,24 @@
 % \cell
 % \acc
 \newcommand{\tablemathFun}[2][]{%
+    \begingroup
     \pgfkeys{/tablemath/fun, #1}%
     \iftablemath@usefpu\pgfkeys{/pgf/fpu,/pgf/fpu/output format=fixed}\fi
     \pgfplotstablegetrowsof{#2}%
     \pgfmathsetmacro{\rows}{\pgfplotsretval}%
-	\pgfmathsetmacro\rowno{0}%
+    \pgfmathsetmacro\rowno{0}%
     \pgfplotstableforeachcolumnelement{\tablemath@column}\of#2\as\cell{%
         \pgfmathsetmacro{\acc}{\tablemath@fun@code}%
-		\pgfmathsetmacro\rowno{\rowno + 1}%
-    }
-    \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}
+        \pgfmathsetmacro\rowno{\rowno + 1}%
+    }%
+    \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}%
     \tablemath@processResult
+    \endgroup
 }
 
 \newcommand{\tablemath@newfun}[1]{%
     \expandafter\newcommand\csname tablemath#1\endcsname[2][]{%
+        \begingroup
         \pgfkeys{/tablemath, ##1}
         \ifcsname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
         \else%
@@ -209,6 +214,7 @@
         \fi
         \pgfmathsetmacro{\tablemathretval}{\csname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname}
         \tablemath@processResult
+        \endgroup
     }
 }
 

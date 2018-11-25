@@ -188,8 +188,7 @@
 % \rows
 % \cell
 % \acc
-\newcommand{\tablemathFun}[2][]{%
-    \begingroup
+\newcommand{\tablemathFunUngrouped}[2][]{%
     \pgfkeys{/tablemath/fun, #1}%
     \iftablemath@usefpu\pgfkeys{/pgf/fpu,/pgf/fpu/output format=fixed}\fi
     \pgfplotstablegetrowsof{#2}%
@@ -201,7 +200,12 @@
     }%
     \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}%
     \tablemath@processResult
-    \endgroup
+}
+
+\newcommand{\tablemathFun}[2][]{%
+	\begingroup
+	\tablemathFunUngrouped[#1]{#2}%
+	\endgroup
 }
 
 \newcommand{\tablemath@newfun}[1]{%

@@ -222,6 +222,22 @@
     }
 }
 
+%Args: Description Col, Table, TargetName
+\def\tablemathCreateSumRow#1#2#3{%
+	\pgfplotstabletranspose[colnames from={#1},input colnames to={#1}]{\intermediatetable}{#2}
+	\pgfplotstablecreatecol[
+    create col/assign/.code={%
+        \def\colsum{0}
+        \pgfmathtruncatemacro\maxcolindex{\pgfplotstablecols-1}
+        \pgfplotsforeachungrouped \col in {1,...,\maxcolindex}{
+            \pgfmathsetmacro\colsum{\colsum+\thisrowno{\col}}
+        }
+        \pgfkeyslet{/pgfplots/table/create col/next content}\colsum
+    }
+	]{Sum}\intermediatetable
+	\pgfplotstabletranspose[columns={#1,Sum},colnames from={#1}, input colnames to={#1}]{#3}{\intermediatetable}
+}
+
 \newcommand\tablemathMedian[2][]{\tablemathQuantile[#1,median]{#2}}
 \@for\i:=Min,Max\do{%
     \expandafter\tablemath@newfun\expandafter{\i}

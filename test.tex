@@ -3,19 +3,19 @@
 \usepackage{tablemath}
 
 \pgfplotstableread{ 
-    Utilization     Power
-       100         688
-        90         614
-        80         532
-        70         467
-        60         416
-        50         373
-        50         374
-        40         337
-        30         301
-        20         266
-        10         228
-         0        95.8
+Name    Utilization     Power
+a       100         688
+ b       90         614
+  c      80         532
+   d     70         467
+  e      60         416
+  f      50         373
+  g      50         374
+  h      40         337
+  i      30         301
+   j     20         266
+   k     10         228
+   l      0        95.8
 }\platinumFour
 
 \begin{document}
@@ -52,7 +52,11 @@
 
     $Test = \test$
     
-    ---
-
-    \pgfplotstabletypeset{\platinumFour}
+ ---
+	\tablemathCreateSumRow{Name}\platinumFour\sumRow
+    \pgfplotstabletypeset[columns/Name/.style={string type}]{\platinumFour}
+    \pgfplotstabletypeset[columns/Name/.style={string type}]{\sumRow}
+	\pgfplotstablevertcat{\platinumFour}\sumRow
+    \pgfplotstabletypeset[columns/Name/.style={string type}]{\platinumFour}
+	
 \end{document}

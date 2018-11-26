@@ -53,10 +53,11 @@ a       100         688
     $Test = \test$
     
  ---
-	\tablemathCreateSumRow{Name}\platinumFour\sumRow
-    \pgfplotstabletypeset[columns/Name/.style={string type}]{\platinumFour}
-    \pgfplotstabletypeset[columns/Name/.style={string type}]{\sumRow}
-	\pgfplotstablevertcat{\platinumFour}\sumRow
-    \pgfplotstabletypeset[columns/Name/.style={string type}]{\platinumFour}
+%	\tablemathCreateSumRow{Name}\platinumFour\sumRow
+  \tablemathCreateRow[title column=Name, row title=Summe, sum]{\platinumFour}{\sumRow}
+  \pgfplotstabletypeset[columns/Name/.style={string type}]{\platinumFour}
+  \pgfplotstabletypeset[columns/Name/.style={string type}]{\sumRow}
+  \tablemathAddRow[title column=Name, row title=Summe, sum]{\platinumFour}
+  \pgfplotstabletypeset[columns/Name/.style={string type}]{\platinumFour}
 	
 \end{document}

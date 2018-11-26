@@ -10,14 +10,22 @@
 \newif\iftablemath@usefpu
 
 \pgfkeys{
-    /tablemath/.is family, 
+    /tablemath/.is family,
     /tablemath,
         quantile/.is family,
         fun/.is family,
-        column/.estore in = \tablemath@column, 
+        functions/.is family,
+        operations/.is family,
+        showable/.is family,
+        storeable/.is family,
+        column operation/.is family,
+   /tablemath/column operation,
+        column/.estore in = \tablemath@column,
+   /tablemath/storeable,
         result in/.store in = \tablemath@result,
-        result in/.add code = {}{\pgfkeysalso{/tablemath/show=false}},
+        result in/.add code = {}{\pgfkeysalso{/tablemath/showable/show=false}},
         round result to/.store in = \tablemath@round,
+    /tablemath/showable,
         show/.is if = tablemath@printresult,
         show/.default = true,
         show/.initial = true,
@@ -30,8 +38,13 @@
         median/.style={q=4,k=2},
         method/.estore in = \tablemath@quantile@method,
         method=7,
-        .search also = {/tablemath},
-    /tablemath/fun,
+        .search also = {
+          /tablemath,
+          /tablemath/storeable,
+          /tablemath/showable,
+          /tablemath/column operation,
+        },
+    /tablemath/operations,
         initial/.estore in = \acc,
         use fpu/.is if = tablemath@usefpu,
         operation/.store in = \tablemath@fun@code,
@@ -44,7 +57,14 @@
         mape/.style = {operation={\acc + abs(\cell},finally={\acc*100/\rows}},
         gmrae/.style = {operation={\acc + ln(abs(\cell))},finally={exp(\acc/\rows)}},
         gmrae-percent/.style = {gmrae,finally={100*exp(\acc/\rows)}},
-        .search also = {/tablemath},
+    /tablemath/functions,
+        .search also = {
+          /tablemath,
+          /tablemath/storeable,
+          /tablemath/showable,
+          /tablemath/column operation,
+          /tablemath/operations,
+        },
 }
 
 \def\tablemath@cmdname#1{\expandafter\@gobble\string#1}%
@@ -184,12 +204,65 @@
     \endgroup
 }
 
+%Generic version,
+%Performs operation that is currenly defined on all columns in #1 and returns a result
+%table in #2 with a new row named after the key. Transpose per option in #3
+%Needs to be called after pgfkeys have already been set!
+%PRECONDITION: this needs to be already grouped!
+\def\tablemath@makeRow#1#2#3{
+  \pgfplotstabletranspose[colnames from/.expand once=\tablemath@column,input colnames to/.expand once={\tablemath@column}]{\tablemath@intermediatetable}{#1}%
+  \pgfplotstablecreatecol[%
+    create col/assign/.code={%
+        \iftablemath@usefpu\pgfkeys{/pgf/fpu,/pgf/fpu/output format=fixed}\fi
+        \pgfmathtruncatemacro\maxcolindex{\pgfplotstablecols-1}%
+        \pgfplotstablegetrowsof{#1}%
+        \pgfmathsetmacro{\rows}{\pgfplotsretval}%
+        \pgfmathsetmacro\rowno{0}%
+        \pgfplotsforeachungrouped \col in {1,...,\maxcolindex}{%
+          \pgfmathsetmacro{\cell}{\thisrowno{\col}}
+          \pgfmathsetmacro{\acc}{\tablemath@fun@code}%
+          \pgfmathsetmacro\rowno{\rowno+1}%
+        }%
+        \pgfmathsetmacro{\tablemathretval}{\tablemath@fun@postcode}%
+        \pgfkeyslet{/pgfplots/table/create col/next content}\tablemathretval
+    }%
+  ]{\tablemath@newrow}\tablemath@intermediatetable
+  \pgfplotstabletranspose[%
+    %columns/.expanded={\tablemath@column,\tablemath@newrow},%
+    #3,
+    colnames from/.expand once={\tablemath@column},%
+    input colnames to/.expand once={\tablemath@column}%
+  ]{#2}{\tablemath@intermediatetable}%
+}
+
+%Performs operation defined in #1 on all columns in #2 and returns a result
+%table in #3 with a new row named after the key 
+%TODO: cope with the case where columns are not named
+\def\tablemathCreateRow[#1]#2#3{
+  \begingroup
+  \pgfkeys{/tablemath/operations, title column/.estore in=\tablemath@column, row title/.estore in=\tablemath@newrow, row title=aggregate,#1}
+  \tablemath@makeRow{#2}{#3}{columns/.expanded={\tablemath@column,\tablemath@newrow}}%
+  \pgfplotstable@copy@to@globalbuffers#3{newlycreatedtable}%
+  \endgroup
+  \pgfplotstable@copy@globalbuffers@to#3%
+}
+
+%Same as tablemathCreateRow but append it to the table.
+\def\tablemathAddRow[#1]#2{
+  \begingroup
+  \pgfkeys{/tablemath/operations, title column/.estore in=\tablemath@column, row title/.estore in=\tablemath@newrow, row title=aggregate,#1}
+  \tablemath@makeRow{#2}{#2}{}%
+  \pgfplotstable@copy@to@globalbuffers#2{newlycreatedtable}%
+  \endgroup
+  \pgfplotstable@copy@globalbuffers@to#2%
+}
+
 %Usable macros:
 % \rows
 % \cell
 % \acc
 \newcommand{\tablemathFunUngrouped}[2][]{%
-    \pgfkeys{/tablemath/fun, #1}%
+    \pgfkeys{/tablemath/functions, #1}%
     \iftablemath@usefpu\pgfkeys{/pgf/fpu,/pgf/fpu/output format=fixed}\fi
     \pgfplotstablegetrowsof{#2}%
     \pgfmathsetmacro{\rows}{\pgfplotsretval}%
@@ -211,7 +284,7 @@
 \newcommand{\tablemath@newfun}[1]{%
     \expandafter\newcommand\csname tablemath#1\endcsname[2][]{%
         \begingroup
-        \pgfkeys{/tablemath, ##1}
+        \pgfkeys{/tablemath/functions, ##1}
         \ifcsname tablemath@results@\tablemath@cmdname##2@#1@\tablemath@column\endcsname
         \else%
             \tablemath@parseSorted{##2}

@@ -52,6 +52,7 @@
         finally=\acc,
         initial=0,
         sum/.style = {operation={\acc + \cell}},
+        min/.style = {initial=9999,operation={ (\acc < \cell) ? \acc : \cell}},
         product/.style = {initial=1,operation={\acc * \cell}},
         average/.style = {sum,finally={\acc/\rows}},
         mape/.style = {operation={\acc + abs(\cell},finally={\acc*100/\rows}},
